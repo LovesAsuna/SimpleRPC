@@ -158,7 +158,12 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 	sent := make(chan struct{})
 	go func() {
 		err := req.svc.call(req.mtype, req.argv, req.replyv)
-		called <- struct{}{}
+		select {
+		case called <- struct{}{}:
+		default:
+			return
+		}
+
 		if err != nil {
 			req.h.Error = err.Error()
 			server.sendResponse(cc, req.h, invalidRequest, sending)
